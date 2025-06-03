@@ -1,10 +1,8 @@
-# 📸 Triyog PhotoStory Watermarker
+# Triyog Watermarker
 
 A simple Python tool designed for the **Triyog High School PhotoStory Competition** to batch watermark images with a school-branded text logo, manage attributions, and optionally overlay captions. Includes both **Command-Line** and **Tkinter GUI** versions. Exportable as `.exe` for ease of use.
 
----
-
-## 🔧 Features
+## Features
 
 - ✅ Batch watermark images with customizable text (default: `Triyog Coded`)
 - ✅ CSV-based attribution and caption overlay
@@ -13,9 +11,7 @@ A simple Python tool designed for the **Triyog High School PhotoStory Competitio
 - ✅ Easy-to-use GUI and nerd-friendly CLI
 - ✅ CLI version includes fun ASCII splash screen 😎
 
----
-
-## 🛠 Installation
+##  Installation
 
 > Requires Python 3.9+  
 > Recommended: Use a virtual environment

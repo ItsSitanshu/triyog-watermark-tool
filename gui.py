@@ -12,7 +12,7 @@ from watermark_processor import WatermarkProcessor
 class WatermarkGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Triyog Coded - Enhanced Watermarking Tool")
+        self.root.title("Triyog Watermarker")
         self.root.geometry("700x600")
         self.root.resizable(True, True)
         
