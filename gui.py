@@ -33,11 +33,11 @@ class WatermarkGUI:
         self.root.rowconfigure(0, weight=1)
         main_frame.columnconfigure(1, weight=1)
         
-        title_label = ttk.Label(main_frame, text="Triyog Coded Watermarking Tool", 
+        title_label = ttk.Label(main_frame, text="Triyog Watermarking Tool", 
                                font=('Arial', 16, 'bold'))
         title_label.grid(row=0, column=0, columnspan=3, pady=(0, 10))
         
-        subtitle_label = ttk.Label(main_frame, text="PhotoStory Competition Watermarker - Enhanced Edition", 
+        subtitle_label = ttk.Label(main_frame, text="PhotoStory Competition Watermarker", 
                                   font=('Arial', 10))
         subtitle_label.grid(row=1, column=0, columnspan=3, pady=(0, 20))
         
@@ -56,7 +56,7 @@ class WatermarkGUI:
                   command=self.browse_logo_file).grid(row=3, column=2, pady=5)
         
         ttk.Label(main_frame, text="Watermark Text:").grid(row=4, column=0, sticky=tk.W, pady=5)
-        self.watermark_var = tk.StringVar(value="Triyog Coded")
+        self.watermark_var = tk.StringVar(value="PNJWEW2025")
         ttk.Entry(main_frame, textvariable=self.watermark_var, width=50).grid(
             row=4, column=1, sticky=(tk.W, tk.E), padx=(10, 5), pady=5)
         
