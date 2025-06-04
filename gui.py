@@ -37,7 +37,7 @@ class WatermarkGUI:
                                font=('Arial', 16, 'bold'))
         title_label.grid(row=0, column=0, columnspan=3, pady=(0, 10))
         
-        subtitle_label = ttk.Label(main_frame, text="PhotoStory Competition Watermarker", 
+        subtitle_label = ttk.Label(main_frame, text="PhotoStory Competition Watermarker - Dual Output Mode", 
                                   font=('Arial', 10))
         subtitle_label.grid(row=1, column=0, columnspan=3, pady=(0, 20))
         
@@ -67,7 +67,7 @@ class WatermarkGUI:
         ttk.Button(main_frame, text="Browse", 
                   command=self.browse_output_folder).grid(row=5, column=2, pady=5)
         
-        info_label = ttk.Label(main_frame, text="(Output will be saved in 'output' subfolder)", 
+        info_label = ttk.Label(main_frame, text="(Output will create 'output_normal' and 'output_wm' subfolders)", 
                               font=('Arial', 8), foreground='gray')
         info_label.grid(row=6, column=1, sticky=tk.W, padx=(10, 5))
         
@@ -99,13 +99,17 @@ class WatermarkGUI:
         button_frame = ttk.Frame(main_frame)
         button_frame.grid(row=10, column=0, columnspan=3, pady=20)
         
-        self.start_button = ttk.Button(button_frame, text="Start Watermarking", 
+        self.start_button = ttk.Button(button_frame, text="Start Dual Watermarking", 
                                       command=self.start_processing, style='Accent.TButton')
         self.start_button.pack(side=tk.LEFT, padx=(0, 10))
         
-        self.open_output_button = ttk.Button(button_frame, text="Open Output Folder", 
-                                           command=self.open_output_folder, state='disabled')
-        self.open_output_button.pack(side=tk.LEFT)
+        self.open_normal_button = ttk.Button(button_frame, text="Open Normal Folder", 
+                                           command=self.open_normal_folder, state='disabled')
+        self.open_normal_button.pack(side=tk.LEFT, padx=(0, 5))
+        
+        self.open_wm_button = ttk.Button(button_frame, text="Open Watermarked Folder", 
+                                       command=self.open_wm_folder, state='disabled')
+        self.open_wm_button.pack(side=tk.LEFT)
         
         status_frame = ttk.LabelFrame(main_frame, text="Status Log", padding="10")
         status_frame.grid(row=11, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(10, 0))
@@ -121,10 +125,11 @@ class WatermarkGUI:
         
         main_frame.rowconfigure(11, weight=1)
         
-        self.log_status("Welcome to Triyog Coded Enhanced Watermarking Tool!")
-        self.log_status("✨ Features: Logo watermarks, subfolder support, photographer attribution")
-        self.log_status("📁 Supports: JPG, PNG, BMP, TIFF, WEBP, GIF files")
-        self.log_status("🏷️ Subfolder names will be added to watermark text")
+        self.log_status("Welcome to Triyog Enhanced Dual-Output Watermarking Tool!")
+        self.log_status("✨ Features: Two output modes - Normal and Watermarked")
+        self.log_status("📁 Normal: Simple attributions and small watermark")
+        self.log_status("🔒 Watermarked: Diagonal pattern protection with faint logo overlay")
+        self.log_status("🏷️ Supports: JPG, PNG, BMP, TIFF, WEBP, GIF files")
         
     def browse_input_folder(self):
         folder = filedialog.askdirectory(title="Select Input Folder (with photographer subfolders)")
@@ -146,7 +151,7 @@ class WatermarkGUI:
         if folder:
             self.output_folder_var.set(folder)
             self.log_status(f"Parent output folder selected: {folder}")
-            self.log_status("Images will be saved in 'output' subfolder")
+            self.log_status("Images will be saved in 'output_normal' and 'output_wm' subfolders")
             
     def browse_csv_file(self):
         file = filedialog.askopenfilename(
@@ -192,10 +197,11 @@ class WatermarkGUI:
             return
             
         self.start_button.config(state='disabled')
-        self.open_output_button.config(state='disabled')
+        self.open_normal_button.config(state='disabled')
+        self.open_wm_button.config(state='disabled')
         
         self.status_text.delete(1.0, tk.END)
-        self.log_status("🚀 Starting enhanced watermarking process...")
+        self.log_status("🚀 Starting dual-output watermarking process...")
         
         processing_thread = threading.Thread(target=self.process_images)
         processing_thread.daemon = True
@@ -210,7 +216,9 @@ class WatermarkGUI:
             logo_file = self.logo_file_var.get()
             preserve_structure = self.preserve_structure_var.get()
             
-            output_folder = os.path.join(parent_output_folder, "output")
+            # Create both output folders
+            normal_output_folder = os.path.join(parent_output_folder, "output_normal")
+            wm_output_folder = os.path.join(parent_output_folder, "output_wm")
             
             if logo_file and os.path.exists(logo_file):
                 if self.processor.load_logo(logo_file):
@@ -218,9 +226,11 @@ class WatermarkGUI:
                 else:
                     self.log_status("❌ Failed to load logo, continuing without logo")
             
-            output_path = Path(output_folder)
-            output_path.mkdir(parents=True, exist_ok=True)
-            self.log_status(f"📁 Output folder created: {output_folder}")
+            # Create output directories
+            Path(normal_output_folder).mkdir(parents=True, exist_ok=True)
+            Path(wm_output_folder).mkdir(parents=True, exist_ok=True)
+            self.log_status(f"📁 Normal output folder created: {normal_output_folder}")
+            self.log_status(f"📁 Watermarked output folder created: {wm_output_folder}")
             
             if csv_file and os.path.exists(csv_file):
                 count = self.processor.load_attribution_csv(csv_file)
@@ -240,61 +250,93 @@ class WatermarkGUI:
             if photographers:
                 self.log_status(f"👥 Photographers found: {', '.join(photographers)}")
             
-            self.progress_bar.config(maximum=len(image_files))
+            # Double the progress bar maximum since we're processing each image twice
+            self.progress_bar.config(maximum=len(image_files) * 2)
             
-            attribution_log_path = output_path / "watermarking_log.csv"
+            normal_log_path = Path(normal_output_folder) / "watermarking_log.csv"
+            wm_log_path = Path(wm_output_folder) / "watermarking_log.csv"
             
-            success_count = 0
+            success_count_normal = 0
+            success_count_wm = 0
+            
             for i, img_info in enumerate(image_files):
                 img_file = img_info['path']
                 photographer = img_info['photographer']
                 subfolder = img_info['subfolder']
                 relative_path = img_info['relative_path']
                 
+                # Determine output paths for both versions
                 if photographer:
-                    photographer_folder = output_path / photographer
-                    photographer_folder.mkdir(parents=True, exist_ok=True)
-                    output_file = photographer_folder / img_file.name
+                    normal_photographer_folder = Path(normal_output_folder) / photographer
+                    wm_photographer_folder = Path(wm_output_folder) / photographer
+                    normal_photographer_folder.mkdir(parents=True, exist_ok=True)
+                    wm_photographer_folder.mkdir(parents=True, exist_ok=True)
+                    normal_output_file = normal_photographer_folder / img_file.name
+                    wm_output_file = wm_photographer_folder / img_file.name
                 else:
-                    output_file = output_path / img_file.name
+                    normal_output_file = Path(normal_output_folder) / img_file.name
+                    wm_output_file = Path(wm_output_folder) / img_file.name
                 
-                progress_text = f"Processing {i+1}/{len(image_files)}: {img_file.name}"
+                # Process normal version
+                progress_text = f"Processing Normal {i+1}/{len(image_files)}: {img_file.name}"
                 if photographer:
                     progress_text += f" (📸 {photographer})"
                     
                 self.progress_var.set(progress_text)
-                self.progress_bar.config(value=i+1)
+                self.progress_bar.config(value=i*2 + 1)
                 self.root.update_idletasks()
                 
-                self.log_status(f"⚡ Processing: {img_file.name}" + (f" by {photographer}" if photographer else ""))
-                if subfolder:
-                    self.log_status(f"   🏷️  Adding subfolder name: {subfolder}")
+                self.log_status(f"⚡ Processing Normal: {img_file.name}" + (f" by {photographer}" if photographer else ""))
                 
-                if self.processor.add_watermark(str(img_file), str(output_file), 
-                                            watermark_text, str(attribution_log_path), 
-                                            photographer, subfolder):
-                    success_count += 1
-                    self.log_status(f"✅ Saved: {output_file.relative_to(output_path)}")
+                if self.processor.add_watermark(str(img_file), str(normal_output_file), 
+                                            watermark_text, str(normal_log_path), 
+                                            photographer, subfolder, watermark_mode='normal'):
+                    success_count_normal += 1
+                    self.log_status(f"✅ Normal saved: {normal_output_file.relative_to(Path(normal_output_folder))}")
                 else:
-                    self.log_status(f"❌ Failed: {img_file.name}")
+                    self.log_status(f"❌ Normal failed: {img_file.name}")
+                
+                # Process watermarked version
+                progress_text = f"Processing Watermarked {i+1}/{len(image_files)}: {img_file.name}"
+                if photographer:
+                    progress_text += f" (📸 {photographer})"
+                    
+                self.progress_var.set(progress_text)
+                self.progress_bar.config(value=i*2 + 2)
+                self.root.update_idletasks()
+                
+                self.log_status(f"🔒 Processing Watermarked: {img_file.name}" + (f" by {photographer}" if photographer else ""))
+                
+                if self.processor.add_watermark(str(img_file), str(wm_output_file), 
+                                            watermark_text, str(wm_log_path), 
+                                            photographer, subfolder, watermark_mode='watermarked'):
+                    success_count_wm += 1
+                    self.log_status(f"✅ Watermarked saved: {wm_output_file.relative_to(Path(wm_output_folder))}")
+                else:
+                    self.log_status(f"❌ Watermarked failed: {img_file.name}")
             
-            self.progress_var.set(f"🎉 Complete! Processed {success_count}/{len(image_files)} images")
-            self.log_status(f"🎊 Processing complete! Successfully processed: {success_count}/{len(image_files)} images")
-            self.log_status(f"📁 Output folder: {output_folder}")
-            self.log_status(f"📝 Processing log: {attribution_log_path}")
+            self.progress_var.set(f"🎉 Complete! Normal: {success_count_normal}/{len(image_files)}, Watermarked: {success_count_wm}/{len(image_files)}")
+            self.log_status(f"🎊 Processing complete!")
+            self.log_status(f"📊 Normal version: {success_count_normal}/{len(image_files)} images")
+            self.log_status(f"📊 Watermarked version: {success_count_wm}/{len(image_files)} images")
+            self.log_status(f"📁 Normal output: {normal_output_folder}")
+            self.log_status(f"📁 Watermarked output: {wm_output_folder}")
             
             messagebox.showinfo("Complete", 
-                            f"Watermarking complete! 🎉\n\n"
-                            f"Successfully processed: {success_count}/{len(image_files)} images\n"
-                            f"Output folder: {output_folder}\n\n"
-                            f"Features applied:\n"
-                            f"• Logo watermark (bottom-left)\n"
-                            f"• Text watermark with subfolder name (bottom-right)\n"
-                            f"• Photographer attribution (top-right)\n"
-                            f"• Caption overlay (bottom-center)")
+                            f"Dual watermarking complete! 🎉\n\n"
+                            f"Normal version: {success_count_normal}/{len(image_files)} images\n"
+                            f"Watermarked version: {success_count_wm}/{len(image_files)} images\n\n"
+                            f"Output folders:\n"
+                            f"• Normal: {normal_output_folder}\n"
+                            f"• Watermarked: {wm_output_folder}\n\n"
+                            f"Features:\n"
+                            f"• Normal: Simple attributions and small watermark\n"
+                            f"• Watermarked: Diagonal pattern protection")
             
-            self.actual_output_folder = output_folder
-            self.open_output_button.config(state='normal')
+            self.actual_normal_folder = normal_output_folder
+            self.actual_wm_folder = wm_output_folder
+            self.open_normal_button.config(state='normal')
+            self.open_wm_button.config(state='normal')
             
         except Exception as e:
             self.log_status(f"💥 Error: {str(e)}")
@@ -304,35 +346,34 @@ class WatermarkGUI:
             self.progress_bar.config(value=0)
             self.progress_var.set("Ready to start watermarking...")
             
-    def open_output_folder(self):
-        if self.actual_output_folder and os.path.exists(self.actual_output_folder):
+    def open_normal_folder(self):
+        if hasattr(self, 'actual_normal_folder') and self.actual_normal_folder and os.path.exists(self.actual_normal_folder):
             try:
                 if sys.platform == "win32":
-                    os.startfile(self.actual_output_folder)
+                    os.startfile(self.actual_normal_folder)
                 elif sys.platform == "darwin":  # macOS
-                    subprocess.run(["open", self.actual_output_folder])
+                    subprocess.run(["open", self.actual_normal_folder])
                 else:  # Linux
-                    subprocess.run(["xdg-open", self.actual_output_folder])
-                self.log_status(f"📂 Opened output folder: {self.actual_output_folder}")
+                    subprocess.run(["xdg-open", self.actual_normal_folder])
+                self.log_status(f"📂 Opened normal output folder: {self.actual_normal_folder}")
             except Exception as e:
                 self.log_status(f"❌ Could not open folder: {str(e)}")
-                messagebox.showerror("Error", f"Could not open output folder: {str(e)}")
+                messagebox.showerror("Error", f"Could not open normal folder: {str(e)}")
         else:
-            messagebox.showwarning("Warning", "No output folder available or folder doesn't exist")
-
-def main():
-    root = tk.Tk()
-    app = WatermarkGUI(root)
+            messagebox.showwarning("Warning", "No normal output folder available or folder doesn't exist")
     
-    # Center the window on screen
-    root.update_idletasks()
-    width = root.winfo_width()
-    height = root.winfo_height()
-    x = (root.winfo_screenwidth() // 2) - (width // 2)
-    y = (root.winfo_screenheight() // 2) - (height // 2)
-    root.geometry(f"{width}x{height}+{x}+{y}")
-    
-    root.mainloop()
-
-if __name__ == "__main__":
-    main()
+    def open_wm_folder(self):
+        if hasattr(self, 'actual_wm_folder') and self.actual_wm_folder and os.path.exists(self.actual_wm_folder):
+            try:
+                if sys.platform == "win32":
+                    os.startfile(self.actual_wm_folder)
+                elif sys.platform == "darwin":  # macOS
+                    subprocess.run(["open", self.actual_wm_folder])
+                else:  # Linux
+                    subprocess.run(["xdg-open", self.actual_wm_folder])
+                self.log_status(f"📂 Opened watermarked output folder: {self.actual_wm_folder}")
+            except Exception as e:
+                self.log_status(f"❌ Could not open folder: {str(e)}")
+                messagebox.showerror("Error", f"Could not open watermarked folder: {str(e)}")
+        else:
+            messagebox.showwarning("Warning", "No watermarked output folder available or folder doesn't exist")
